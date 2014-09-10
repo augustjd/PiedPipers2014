@@ -5,7 +5,7 @@ PIPERS  = 1
 
 SIZE    = 100
 
-PIPER_PROGRAM = lessdumb
+PIPER_PROGRAM = kmeans
 run:
 	java piedpipers.sim.Piedpipers $(PIPER_PROGRAM) $(PIPERS) $(RATS) $(MAKE_DISPLAY) 6 $(SIZE)
 

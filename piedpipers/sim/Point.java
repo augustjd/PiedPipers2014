@@ -22,4 +22,9 @@ public class Point {
 	public boolean equals(Point o) {
 		return o.x == x && o.y == y;
 	}
+
+    @Override
+    public String toString() {
+        return String.format("<X: %f Y: %f>", this.x, this.y);
+    }
 }
