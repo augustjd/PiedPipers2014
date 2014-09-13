@@ -1,5 +1,7 @@
 package piedpipers.sim;
 
+import java.awt.Color;
+
 public abstract class Player {
 	public int id; // id of the piper, 1,2,3...npiper
 	public int dimension;
@@ -16,4 +18,7 @@ public abstract class Player {
 	public abstract Point move(Point[] pipers, // positions of pipers
 			Point[] rats); // positions of the rats
 
+    public void setRatColor(int i, Color c) {
+        Piedpipers.rat_colors[i] = c;
+    }
 }

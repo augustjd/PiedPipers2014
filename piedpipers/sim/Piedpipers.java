@@ -196,6 +196,8 @@ public class Piedpipers {
 		int FIELD_SIZE = 600;
 		JFrame f;
 		FieldPanel field;
+		JButton play;
+
 		JButton next;
 		JButton next10;
 		JButton next50;
@@ -231,6 +233,7 @@ public class Piedpipers {
 			}
 		}
 
+        boolean playing = false;
 		public void actionPerformed(ActionEvent e) {
 			int steps = 0;
 
@@ -240,6 +243,29 @@ public class Piedpipers {
 				steps = 10;
 			else if (e.getSource() == next50)
 				steps = 50;
+            else if (e.getSource() == play) {
+                playing = !playing;
+
+                if (playing) {
+                    play.setText("Pause");
+                } else {
+                    play.setText("Play");
+                }
+
+/*
+                new java.util.Timer().schedule( 
+                        new java.util.TimerTask() {
+                            @Override
+                            public void run() {
+                                System.out.println("Step.");
+                                performOnce();
+                                repaint();
+                            }
+                        }, 
+                        10
+                );
+*/
+            }
 
 			for (int i = 0; i < steps; ++i) {
 				if (!performOnce())
@@ -264,6 +290,10 @@ public class Piedpipers {
 			next50.addActionListener(this);
 			next50.setBounds(200, 0, 100, 50);
 
+			play = new JButton("Play");
+			play.addActionListener(this);
+			play.setBounds(300, 0, 100, 50);
+
 			label = new JLabel();
 			label.setVisible(false);
 			label.setBounds(0, 60, 200, 50);
@@ -274,6 +304,7 @@ public class Piedpipers {
 			this.add(next);
 			this.add(next10);
 			this.add(next50);
+			this.add(play);
 			this.add(label);
 			this.add(field);
 
@@ -327,6 +358,16 @@ public class Piedpipers {
 			drawRats(g2);
 		}
 
+		public void drawPoint(Graphics2D g2, Point p, Color c) {
+            g2.setPaint(c);
+
+			Ellipse2D e = new Ellipse2D.Double(p.x * s - PSIZE / 2 + ox, p.y
+					* s - PSIZE / 2 + oy, PSIZE, PSIZE);
+			g2.setStroke(stroke);
+			g2.draw(e);
+			g2.fill(e);
+		}
+
 		public void drawPoint(Graphics2D g2, Point p, PType type) {
 			if (type == PType.PTYPE_MUSICPIPERS)
 				g2.setPaint(Color.BLUE);
@@ -354,7 +395,7 @@ public class Piedpipers {
 
 		public void drawRats(Graphics2D g2) {
 			for (int i = 0; i < nrats; ++i) {
-				drawPoint(g2, rats[i], PType.PTYPE_RAT);
+				drawPoint(g2, rats[i], rat_colors[i]);
 			}
 		}
 	}
@@ -537,7 +578,9 @@ public class Piedpipers {
 		if (y3 >= OPEN_LEFT && y3 <= OPEN_RIGHT) 
 			return false;
 		else {
+            /*
 			System.out.printf("hit the medium fence");
+            */
 			return true;
 		}
 	}
@@ -648,6 +691,11 @@ public class Piedpipers {
 		for (int s = 0; s < nrats; ++s)
 			rats[s] = randomPosition(1);
 
+        rat_colors = new Color[nrats];
+        for (int i = 0; i < nrats; i++) {
+            rat_colors[i] = Color.GREEN;
+        }
+
 		// initialize pipers
 		pipers = new Point[npipers];
 		for (int d = 1; d <= npipers; ++d) {
@@ -725,6 +773,8 @@ public class Piedpipers {
 	Point[] pipers;
 	// sheep positions
 	Point[] rats;
+
+    public static Color[] rat_colors;
 
 	// game config
 	int npipers;
