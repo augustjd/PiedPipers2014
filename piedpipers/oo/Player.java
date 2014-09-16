@@ -5,6 +5,7 @@ import java.lang.Double;
 import java.lang.Math.*;
 
 import piedpipers.sim.Point;
+import java.awt.Color;
 
 public class Player extends piedpipers.sim.Player {
 
@@ -13,6 +14,9 @@ public class Player extends piedpipers.sim.Player {
         public double x;
         public double y;
 
+        public Vector() {
+            this(0,0);
+        }
         public Vector(Point p) {
             this(p.x, p.y); 
         }
@@ -81,9 +85,18 @@ public class Player extends piedpipers.sim.Player {
         }
 
         public double distanceTo(Vector b) {
-            return Math.sqrt((this.x - b.x) * (this.x - b.x) + (this.y - b.y) * (this.y - b.y));
+            Double result = Math.sqrt((this.x - b.x) * (this.x - b.x) + 
+                                      (this.y - b.y) * (this.y - b.y));
+            if (result == null) {
+                return Double.POSITIVE_INFINITY;
+            }
+            else return result;
         }
 
+
+        public double angleWithOrigin() {
+            return Math.atan2(this.y, this.x);
+        }
         public boolean equals(Vector b) {
             return this.x == b.x && this.y == b.y;
         }
@@ -110,6 +123,7 @@ public class Player extends piedpipers.sim.Player {
     public static class TargetStrategy extends Strategy {
         Vector target;
         Vector intermediate_target;
+        public boolean choose_next = true;
 
         public TargetStrategy(Vector target) {
             this.target = target;
@@ -146,18 +160,14 @@ public class Player extends piedpipers.sim.Player {
                     return getSideOfGate(s, destination_side);
                 }
             } else {
-                /*System.out.format("Intermediate is player side: %s Distance to target: %f\n", player_side.toString(),
-                        position.distanceTo(intermediate_target));*/
                 return getSideOfGate(s, player_side);
             }
         }
 
-
-
         @Override
         public Point generateMove(Player p, Scene s) {
             Vector position = s.getPlayerPosition(p);
-            if (this.reachedTarget(p,s)) {
+            if (this.reachedTarget(p,s) && choose_next) {
                 System.out.println("Reached target.");
                 p.chooseStrategy(s);
             } else {
@@ -171,7 +181,15 @@ public class Player extends piedpipers.sim.Player {
                 }
             }
 
-            Vector difference = this.intermediate_target.sub(position);
+            Vector difference;
+            if (this.intermediate_target == null) {
+                this.intermediate_target = this.target;
+            }
+            try {
+                difference = this.intermediate_target.sub(position);
+            } catch (NullPointerException e) {
+                difference = new Vector(0,0);
+            }
 
             double step_size = Math.min(p.getSpeed(), difference.length());
 
@@ -188,21 +206,35 @@ public class Player extends piedpipers.sim.Player {
         }
 
         private boolean reachedTarget(Player p, Scene s) {
-            return this.target.distanceTo(s.getPlayerPosition(p)) < EPSILON;
+            assert(p != null);
+            assert(target != null);
+            assert(s != null);
+            assert(s.getPlayerPosition(p) != null);
+            assert(this != null);
+
+            Vector player_position = s.getPlayerPosition(p);
+            boolean result;
+            try {
+                result = target.distanceTo(player_position) < EPSILON;
+            } catch (NullPointerException e) {
+                return true;
+            }
+            return result;
         }
 
         public String getName() { return "TargetStrategy"; }
     }
 
-    public static class FartherFromGateComparator extends Comparator<Vector> {
+    public static class FartherFromGateComparator implements Comparator<Integer> {
         Scene s;
         public FartherFromGateComparator(Scene s) {
             this.s = s;
         }
 
-        public int compare(int i1, int i2) {
+        @Override
+        public int compare(Integer i1, Integer i2) {
             Vector gate = s.getGatePosition();
-            return new Double(s.rats_vector.get(i1).distanceTo(gate)).compareTo(s.rats_vector.get(i2).distanceTo(gate));
+            return - new Double(s.rat_vectors.get(i1).distanceTo(gate)).compareTo(s.rat_vectors.get(i2).distanceTo(gate));
         }
     }
 
@@ -222,16 +254,28 @@ public class Player extends piedpipers.sim.Player {
 
             Collections.sort(s.rats, new FartherFromGateComparator(s));
 
-            closest_index = s.rats[id];
+            if (s.rats.size() > 0) {
+                closest_index = s.rats.get((p.id * 5) % s.rats.size());
+            }
             assert(s.getSide(s.absolute_rats[closest_index]) == Scene.Side.RIGHT);
             System.out.format("%d: %s\n", closest_index,  s.rat_vectors.get(closest_index));
             return closest_index; 
         }
 
 
-        public static final int RATS_UNTIL_DROPOFF = 5;
+        public static final int RATS_UNTIL_DROPOFF = 8;
+        public static final int MAX_TURNS_UNTIL_DROPOFF = 200;
+        public int turns_until_dropoff = MAX_TURNS_UNTIL_DROPOFF;
         @Override
         public Point generateMove(Player p, Scene s) {
+            if (p.music) {
+                turns_until_dropoff--;
+            }
+
+            if (turns_until_dropoff == 0) {
+                p.setStrategy(new ReturnToGateStrategy(s));
+            }
+
             if (nearTargetRat(p, s)) {
                 p.turnOnMusic();
 
@@ -241,7 +285,8 @@ public class Player extends piedpipers.sim.Player {
                     p.setStrategy(new ReturnToGateStrategy(s));
                 } else {
                     this.rat_index = chooseRat(p, s);
-                    if (this.rat_index < 0) {
+                    if (this.rat_index > 0) {
+                        //p.setRatColor(this.rat_index, Color.RED);
                     }
                 }
             }
@@ -281,6 +326,274 @@ public class Player extends piedpipers.sim.Player {
         }
     }
 
+    public static class PhaseStrategy extends Strategy {
+        public static class Phase implements Comparable<Phase>{
+            public double min_density;
+            public Strategy s;
+            public Phase(double min_density, Strategy s) {
+                this.min_density = min_density;
+                this.s = s;
+            }
+
+            @Override
+            public int compareTo(Phase two) {
+                return new Double(this.min_density).compareTo(two.min_density);
+            }
+        }
+        List<Phase> phases;
+        public PhaseStrategy(List<Phase> phases) {
+            Collections.sort(phases);
+            this.phases = phases;
+        }
+        public String getName() { return "PhaseStrategy"; }
+        public Point generateMove(Player p, Scene s) {
+            double density = s.getRatsDensity();
+
+            Phase current = null;
+            for (int i = this.phases.size() - 1; i >= 0; i--) {
+                current = phases.get(i);
+                if (current.min_density < density) {
+                    break;
+                }
+            }
+
+            return current.s.generateMove(p, s);
+        }
+    }
+
+    public static class RadialGreedyStrategy extends TargetStrategy {
+        int id;
+        int dimension;
+
+        double rads_slice;
+        public RadialGreedyStrategy(Player p, Scene s) {
+            super(new Vector());
+
+            id = p.id;
+            dimension = s.dimension;
+
+            rads_slice = Math.PI / s.pipers.size();
+        }
+
+        public List<Vector> ratsInSlice(Player p, Scene s) {
+            double start_angle = rads_slice * p.id;
+            double end_angle   = rads_slice * (p.id + 1);
+
+
+            List<Vector> rats_in_slice = new ArrayList<Vector>();
+            for (Integer i : s.rats) {
+                Vector v = s.rat_vectors.get(i);
+                double angle = angleOfPoint(v);
+                if (angle > start_angle && angle <= end_angle &&
+                        v.distanceTo(s.magnetPosition()) > 1.5 * Scene.RANGE_OF_INFLUENCE) {
+                    rats_in_slice.add(v);
+                    //p.setRatColor(i, new Color(70 * p.id % 255,30*p.id % 255, 0));
+                }
+            }
+            return rats_in_slice;
+        }
+
+        boolean moving_towards_gate = false;
+        boolean moving_back = false;
+        @Override
+        public Point generateMove(Player p, Scene s) {
+            Vector me = s.pipers.get(p.id);
+            boolean reached_target = super.reachedTarget(p, s);
+            this.choose_next = false;
+
+            List<Vector> rats_in_slice = ratsInSlice(p, s);
+            int rats_influenced = 0;
+            for (Vector v : rats_in_slice) {
+                if (me.distanceTo(v) < Scene.RANGE_OF_INFLUENCE) {
+                    rats_influenced++;
+                }
+            }
+
+            if (rats_in_slice.size() == rats_influenced) {
+                this.moving_towards_gate = true;
+                System.out.format("Player %d is done!\n", p.id);
+            }
+
+            if (s.getSide(me) == Scene.Side.RIGHT) {
+                p.music = true;
+            }
+
+            if (moving_towards_gate) {
+                this.target = s.getGatePosition();
+                this.target.x -= 10;
+            } else {
+                Vector closest_rat = closestRat(s.pipers.get(p.id), rats_in_slice);
+                this.target = closest_rat;
+            }
+
+            return super.generateMove(p, s);
+        }
+
+        public Vector closestRat(Vector p, List<Vector> rats) {
+            double closest = Double.POSITIVE_INFINITY;
+            Vector closest_vec = null;
+            for (Vector v : rats) {
+                double dist = v.distanceTo(p);
+                if (dist < closest && dist > Scene.RANGE_OF_INFLUENCE) {
+                    closest = dist;
+                    closest_vec = v;
+                }
+            }
+
+            return closest_vec;
+        }
+
+        public double angleOfPoint(Vector p) {
+            return p.sub(dimension/2.0, dimension/2.0).angleWithOrigin() + Math.PI / 2.0;
+        }
+
+        public Vector centerOfSlice(int id, Scene s) {
+            double angle = (rads_slice * (id - 0.5)) - Math.PI / 2.0;
+            double radius = s.dimension/4.0;
+            return s.getGatePosition().add(Math.cos(angle) * radius, Math.sin(angle) * radius);
+        }
+    }
+
+    public static class MagnetStrategy extends TargetStrategy {
+        boolean moving_left = true;
+        public MagnetStrategy(Player p, Scene s) {
+            super(new Vector(s.dimension - Scene.RANGE_OF_INFLUENCE, s.dimension/2));
+            this.choose_next = false;
+        }
+
+        private Vector getClosestPiper(Vector piper, Scene s) {
+            double closest_dist = Double.POSITIVE_INFINITY;
+            Vector closest = s.getGatePosition();
+
+            for (int i = 1; i < s.pipers.size(); i++) {
+                Vector other = s.pipers.get(i);
+                if (other.distanceTo(piper) < closest_dist) {
+                    closest_dist = other.distanceTo(piper);
+                    closest = other;
+                }
+            }
+            return closest;
+        }
+        private static final double CLOSE_DISTANCE = 50;
+
+        private boolean pipersNearby(Vector piper, Scene s) {
+            return getClosestPiper(piper, s).distanceTo(piper) < CLOSE_DISTANCE;
+        }
+
+
+        @Override
+        public Point generateMove(Player p, Scene s) {
+            boolean reached_target = super.reachedTarget(p, s);
+            Vector me = s.pipers.get(0);
+            if (s.getSide(me) == Scene.Side.RIGHT) {
+                p.music = true;
+            }
+            if (reached_target) {
+                moving_left = !moving_left;
+            }
+            if (s.getSide(me) == Scene.Side.RIGHT) {
+                this.target = getClosestPiper(me, s);
+                this.target.y = s.dimension / 2.0;
+            } else {
+                this.target = s.getGatePosition();
+                this.target.x += 10;
+            }
+            /*
+
+            if (moving_left) {
+                this.target = s.getGatePosition();
+                this.target.y = s.dimension/2.0;
+            } else {
+                this.target = s.getGatePosition();
+                this.target.x = s.dimension - Scene.RANGE_OF_INFLUENCE;
+            }
+            if (s.getSide(me) == Scene.Side.RIGHT && pipersNearby(me, s)) {
+                this.target = getClosestPiper(me, s);
+                this.target.y = s.dimension/2;
+            } else {
+                if (reached_target) {
+                    moving_left = !moving_left;
+                }
+
+                if (moving_left) {
+                    this.target = s.getGatePosition();
+                    this.target.x = s.dimension - Scene.RANGE_OF_INFLUENCE;
+                } else {
+                    this.target = s.getGatePosition();
+                    System.out.println("Magnet is moving left!");
+                }
+            }
+            */
+
+            return super.generateMove(p, s);
+        }
+    }
+
+    public static class VerticalSweepStrategy extends TargetStrategy {
+        int id;
+        int dimension;
+        public VerticalSweepStrategy(Player p, Scene s) {
+            super(new Vector());
+
+            this.id = p.id;
+            this.dimension = s.dimension;
+            this.target = generateStartTarget();
+        }
+
+        public double radius_factor = 2.5;
+
+        boolean moving_to_start = true;
+        boolean moving_to_center = false;
+        Vector generateMiddleTarget() {
+            Vector start_target = new Vector();
+
+            start_target.y = dimension/2;
+            start_target.x = dimension/2 + 10 + radius_factor * Scene.RANGE_OF_INFLUENCE * id;
+
+            return start_target;
+        }
+        Vector generateStartTarget() {
+            Vector start_target = new Vector();
+
+
+            start_target.y = Scene.RANGE_OF_INFLUENCE;
+            /*
+            if (id % 2 == 0) {
+                start_target.y = Scene.RANGE_OF_INFLUENCE;
+            } else {
+                start_target.y = dimension - Scene.RANGE_OF_INFLUENCE;
+            }
+            */
+
+            start_target.x = dimension/2 + 10 + radius_factor * Scene.RANGE_OF_INFLUENCE * id;
+            return start_target;
+        }
+
+        @Override
+        public Point generateMove(Player p, Scene s) {
+            boolean reached_target = super.reachedTarget(p, s);
+            if (reached_target) {
+                if (moving_to_start) {
+                    p.music = true;
+
+                    moving_to_start = false;
+                    moving_to_center = true;
+
+                    this.target = generateMiddleTarget();
+                } else if (moving_to_center) {
+                    moving_to_center = false;
+                    this.target = s.getGatePosition().sub_ip(10,10);
+                } else {
+                    p.music = false;
+                    moving_to_start = true;
+                    this.target = generateStartTarget();
+                }
+            }
+
+            return super.generateMove(p, s);
+        }
+    }
+
     private Strategy strategy = null;
 
 
@@ -303,7 +616,7 @@ public class Player extends piedpipers.sim.Player {
 
         public static final double RANGE_OF_INFLUENCE = 10;
 
-        public Set<Integer> rats   = new HashSet<Integer>();
+        public List<Integer> rats   = new ArrayList<Integer>();
         public List<Vector> pipers = new ArrayList<Vector>();
         public List<Vector> rat_vectors = new ArrayList<Vector>();
         public List<Vector> live_rat_vectors = new ArrayList<Vector>();
@@ -322,10 +635,14 @@ public class Player extends piedpipers.sim.Player {
             }
         }
         public Side getSide(Vector v) {
-            if (v.x > this.dimension / 2) {
+            try {
+            if (v.x > this.dimension / 2.0) {
                 return Side.RIGHT;
             } else {
                 return Side.LEFT;
+            }
+            } catch(NullPointerException e) {
+                return Side.RIGHT;
             }
         }
 
@@ -339,6 +656,10 @@ public class Player extends piedpipers.sim.Player {
 
         public double getRatsDensity() {
             return this.getRemainingRats() / (dimension * dimension / 2.0);
+        }
+
+        public Vector magnetPosition() {
+            return this.pipers.get(0);
         }
 
         public Vector closestPiper(Vector p) {
@@ -401,11 +722,13 @@ public class Player extends piedpipers.sim.Player {
                 Vector v = new Vector(r);
                 this.rat_vectors.add(v);
 
+
                 if (getSide(r) == Side.RIGHT && !underInfluenceOfAnyPiper(v, this.pipers)) {
                     this.rats.add(new Integer(i));
                     this.live_rat_vectors.add(v);
                 }
             }
+            this.printRemainingRats();
         }
     }
 
@@ -431,18 +754,22 @@ public class Player extends piedpipers.sim.Player {
         this.setStrategy(new RatTargetStrategy(this, s));
     }
 
+
+    static Scene s = null;
+    static int pipers_moved = 0;
 	public Point move(Point[] pipers, Point[] rats) {
-        Scene s = new Scene(dimension, pipers, rats);
+        s = new Scene(dimension, pipers, rats);
+
         if (strategy == null) {
-            System.out.println(id);
             double theta = id * Math.PI / pipers.length;
-            System.out.println(theta);
 
             Vector target = new Vector(dimension/2 + 10 * Math.sin(theta),
                                        dimension/2 + 10 * Math.cos(theta));
 
-            System.out.println(target);
-            this.setStrategy(new TargetStrategy(target));
+            this.setStrategy(new PhaseStrategy(Arrays.asList(
+                            new PhaseStrategy.Phase(0.0, new RatTargetStrategy(this, s)),
+                            new PhaseStrategy.Phase(0.00015, new RadialGreedyStrategy(this, s)),
+                            new PhaseStrategy.Phase(0.0026, new VerticalSweepStrategy(this, s)))));
         }
         //s.printRemainingRats();
 
