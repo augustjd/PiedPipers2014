@@ -124,7 +124,7 @@ public class Player extends piedpipers.sim.Player {
 
     public static class CrossGateStrategy extends TargetStrategy {
         public CrossGateStrategy(Player p, Scene s) {
-            super(s.getGatePosition().add_ip(s.dimension/4,0));
+            super(s.getGatePosition().add_ip(10,0));
         }
     }
 
@@ -141,9 +141,37 @@ public class Player extends piedpipers.sim.Player {
             Vector r1 = s.rat_vectors.get(i1);
             Vector r2 = s.rat_vectors.get(i2);
 
+            Vector rv1 = s.rat_velocities[i1];
+            Vector rv2 = s.rat_velocities[i2];
+
             Vector player = s.getPlayerPosition(p);
 
-            return new Double(r1.distanceTo(player)).compareTo(r2.distanceTo(player));
+            Double score1 = r1.distanceTo(player);
+            if (rv1.dot(r1.sub(player)) > 0.0) {
+                score1 = Double.POSITIVE_INFINITY;
+            }
+            Double score2 = r2.distanceTo(player);
+            if (rv2.dot(r2.sub(player)) > 0.0) {
+                score2 = Double.POSITIVE_INFINITY;
+            }
+
+            return score1.compareTo(score2);
+
+            /*
+            Double time1 = InterceptorMath.calculateInterceptionTime(r1, rv1, player, Piedpipers.MUSICPIPER_SPEED);
+            Vector int1 = InterceptorMath.calculateInterceptionPosition(r1, rv1, player, Piedpipers.MUSICPIPER_SPEED);
+            if (time1 == null || !s.isValidIntercept(int1)) {
+                time1 = Double.POSITIVE_INFINITY;
+            }
+
+            Double time2 = InterceptorMath.calculateInterceptionTime(r2, rv2, player, Piedpipers.MUSICPIPER_SPEED);
+            Vector int2 = InterceptorMath.calculateInterceptionPosition(r2, rv2, player, Piedpipers.MUSICPIPER_SPEED);
+            if (time2 == null || !s.isValidIntercept(int2)) {
+                time2 = Double.POSITIVE_INFINITY;
+            }
+
+            return time1.compareTo(time2);
+            */
         }
     }
     public static class FartherFromGateComparator implements Comparator<Integer> {
@@ -173,6 +201,17 @@ public class Player extends piedpipers.sim.Player {
             this(p, s, true);
         }
 
+        public boolean targetMovingAway(Player p, Scene s) {
+            Vector r = getTargetRatPosition(s);
+            Vector v = s.rat_velocities[this.rat_index];
+
+            Vector piper = s.getPlayerPosition(p);
+
+            double value = r.sub(piper).dot(v);
+            //System.out.format("Player %d: %f %s -> %s\n", p.id, value, r.sub(piper).toString(), v.toString());
+            return r.sub(piper).dot(v) > 0.0;
+        }
+
         public int chooseRat(Player p, Scene s) {
             double furthest = 0;
             int closest_index = 0;
@@ -184,34 +223,30 @@ public class Player extends piedpipers.sim.Player {
             if (s.rats.size() > 0) {
                 closest_index = s.rats.get(p.id % s.rats.size());
             }
-            assert(s.getSide(s.absolute_rats[closest_index]) == Scene.Side.RIGHT);
             //System.out.format("%d: %s\n", closest_index,  s.rat_vectors.get(closest_index));
             return closest_index; 
         }
 
 
         public static final int RATS_UNTIL_DROPOFF = 8;
-        public static final int MAX_TURNS_UNTIL_DROPOFF = 200;
-        public int turns_until_dropoff = MAX_TURNS_UNTIL_DROPOFF;
+        public static final int TURNS_UNTIL_RECHOOSE = 50;
+        public int turns_until_rechoose = TURNS_UNTIL_RECHOOSE;
         public boolean try_others;
 
         boolean targeted = false;
         @Override
         public Point generateMove(Player p, Scene s) {
-            p.music = true;
-            if (try_others) {
-                if (p.music) {
-                    turns_until_dropoff--;
-                }
-
-                if (turns_until_dropoff == 0) {
-                    p.setStrategy(new ReturnToGateStrategy(s));
-                }
-            }
-
-            if (nearTargetRat(p, s)) {
+            if (s.getRemainingRats() == 0) {
                 p.setStrategy(new ReturnToGateStrategy(s));
             }
+
+            turns_until_rechoose--;
+            if (turns_until_rechoose == 0 || targetMovingAway(p, s)) {
+                turns_until_rechoose = TURNS_UNTIL_RECHOOSE;
+                this.rat_index = chooseRat(p, s);
+            }
+
+            p.music = true;
 
             Vector target_rat = getTargetRatPosition(s);
             Vector piper = s.getPlayerPosition(p);
@@ -224,26 +259,24 @@ public class Player extends piedpipers.sim.Player {
             }
             Vector rat_velocity = s.rat_velocities[this.rat_index];
 
-            Vector interceptLocation = InterceptorMath.calculateInterceptionPosition(target_rat, rat_velocity, piper, speed / 1.1);
-            Double intercept_time    = InterceptorMath.calculateInterceptionTime(target_rat, rat_velocity, piper, speed / 1.1);
+            Vector interceptLocation = InterceptorMath.calculateInterceptionPosition(target_rat, rat_velocity, piper, speed/1.1);
+            Double intercept_time    = InterceptorMath.calculateInterceptionTime(target_rat, rat_velocity, piper, speed/1.1);
 
-            if (!targeted) {
-                if (intercept_time  == null || intercept_time < 0.0 || !s.onField(interceptLocation) || p.id >= 1) {
-                    this.target = target_rat;
-                    System.out.println("No interception found.");
-                } else {
-                    System.out.format("Player %d will intercept rat %s at %s in %f ticks\n", 
-                                      p.id, 
-                                      target_rat.toString(), 
-                                      interceptLocation.toString(), 
-                                      intercept_time);
-
-                    this.target = interceptLocation;
-
-                    targeted = true;
-                }
+            if (intercept_time  == null || intercept_time < 0.0 || 
+                !s.onField(interceptLocation) || s.getSide(interceptLocation) == Scene.Side.LEFT || p.id >= 1) {
+                this.target = target_rat;
+                //System.out.println("No interception found.");
+            } else {
+                /*System.out.format("Player %d will intercept rat %s at %s in %f ticks\n", 
+                                  p.id, 
+                                  target_rat.toString(), 
+                                  interceptLocation.toString(), 
+                                  intercept_time);
+                                  */
+                this.target = interceptLocation;
             }
-            Piedpipers.addDot(this.target.asPoint(), Color.GREEN);
+            p.addDot(this.target.asPoint(), Color.GREEN, true);
+            p.addDot(s.absolute_rats[rat_index], Color.YELLOW, false);
 
             return super.generateMove(p, s);
         }
@@ -364,7 +397,7 @@ public class Player extends piedpipers.sim.Player {
 
             if (rats_in_slice.size() == rats_influenced) {
                 this.moving_towards_gate = true;
-                System.out.format("Player %d is done!\n", p.id);
+                //System.out.format("Player %d is done!\n", p.id);
             }
 
             if (s.getSide(me) == Scene.Side.RIGHT) {
@@ -590,8 +623,8 @@ public class Player extends piedpipers.sim.Player {
 
     static Scene s = null;
     static int pipers_moved = 0;
-	public Point move(Point[] pipers, Point[] rats, boolean[] pipermusic, int[] thetas, Piedpipers p) {
-        s = new Scene(dimension, pipers, rats, thetas, p);
+	public Point move(Point[] pipers, Point[] rats, boolean[] pipermusic, int[] thetas) {
+        s = new Scene(dimension, pipers, rats, thetas);
 
         if (strategy == null) {
             double theta = id * Math.PI / pipers.length;

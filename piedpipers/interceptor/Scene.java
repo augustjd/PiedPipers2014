@@ -74,6 +74,10 @@ public class Scene {
         return best;
     }
 
+    public boolean isValidIntercept(Vector v) {
+        return onField(v) && getSide(v) == Scene.Side.RIGHT;
+    }
+
     public int getRatsUnderInfluenceOfPiper(Point piper) {
         int i = 0;
         for (Point p : absolute_rats) {
@@ -146,9 +150,7 @@ public class Scene {
         return 0;
     }
 
-    Piedpipers pp;
-    public Scene(int dimension, Point[] pipers, Point[] rats, int[] thetas, Piedpipers pp) {
-        this.pp = pp;
+    public Scene(int dimension, Point[] pipers, Point[] rats, int[] thetas) {
         this.dimension = dimension;
         this.absolute_rats = rats;
         for (Point p : pipers) {
@@ -162,9 +164,9 @@ public class Scene {
             Vector v = new Vector(r);
             this.rat_vectors.add(v);
 
-            double rat_theta = thetas[i] * 2.0 * Math.PI / 360.0;
+            double rat_theta = thetas[i] * Math.PI / 180.0;
 
-            this.rat_velocities[i] = new Vector(Math.cos(rat_theta), Math.sin(rat_theta)).scale_ip(Piedpipers.WALK_SPEED);
+            this.rat_velocities[i] = new Vector(Math.sin(rat_theta), Math.cos(rat_theta)).scale_ip(Piedpipers.WALK_SPEED);
 
             if (getSide(r) == Side.RIGHT && !underInfluenceOfAnyPiper(v, this.pipers)) {
                 this.rats.add(new Integer(i));

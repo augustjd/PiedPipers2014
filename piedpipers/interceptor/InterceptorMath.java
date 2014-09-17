@@ -64,7 +64,7 @@ public class InterceptorMath {
             final double tMin = Math.min(t1, t2);
             final double tMax = Math.max(t1, t2);
  
-            t = tMin > 0 ? tMin : tMax; // get the smaller of the two times, unless it's negative
+            t = tMin;// > 0 ? tMin : tMax; // get the smaller of the two times, unless it's negative
             if (t < 0) { // we don't want a solution in the past
                 return null;
             }
