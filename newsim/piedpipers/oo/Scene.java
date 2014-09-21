@@ -25,6 +25,8 @@ public class Scene {
     public Vector getPiper(int index) { return pipers[index]; }
     public boolean isPlayingMusic(int index) { return music[index]; }
     public Vector getRat(int index) { return rats[index]; }
+
+    public int getNumberOfRats() { return rats.length; }
     public int getTime() { return tick; }
 
     public enum Side {
@@ -77,16 +79,13 @@ public class Scene {
         return rat_velocities[rat_index];
     }
 
-    public boolean isRatUnderInfluenceOfPiper(Vector rat, Vector piper) {
-        return rat.distanceTo(piper) < Piedpipers.WALK_DIST;
-    }
-    public boolean isRatUnderInfluenceOfPiper(int rat_index, Vector piper) {
-        return isRatUnderInfluenceOfPiper(getRat(rat_index), piper);
+    public boolean isRatUnderInfluenceOfPiper(Vector rat, int piper_index) {
+        return music[piper_index] && rat.distanceTo(getPiper(piper_index)) < Piedpipers.WALK_DIST;
     }
 
     public boolean isRatUnderInfluenceOfAnyPiper(Vector rat) {
-        for (Vector p : pipers) {
-            if (isRatUnderInfluenceOfPiper(rat, p)) {
+        for (int i = 0; i < pipers.length; i++) {
+            if (isRatUnderInfluenceOfPiper(rat, i)) {
                 return true;
             }
         }

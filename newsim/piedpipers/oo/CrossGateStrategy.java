@@ -10,7 +10,7 @@ import java.awt.Color;
 
 public class CrossGateStrategy extends TargetStrategy {
     public CrossGateStrategy(Scene s) {
-        super(s.getGatePosition());
+        super(s.getGatePosition().add(2,0));
     }
 
     @Override

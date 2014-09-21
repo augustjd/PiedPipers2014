@@ -13,6 +13,8 @@ public class Player extends piedpipers.sim.Player {
     public void init() {
     }
 
+    public boolean SHOW_DOTS = true;
+
     public static int pipers_moved = 0;
     public double getSpeed() {
         if (this.music) {
@@ -45,7 +47,7 @@ public class Player extends piedpipers.sim.Player {
 
             this.clearDots();
             for (int i = 0; i < rats.length; i++) {
-                addDot(next.getRat(i).asPoint(), Color.BLUE);
+                //addDot(next.getRat(i).asPoint(), Color.BLUE);
                 //addDot(second_next.getRat(i).asPoint(), Color.RED);
                 Vector next_bounce = InterceptorMath.getNextBounceLocation(i, scene);
                 if (next_bounce != null) {
@@ -64,6 +66,20 @@ public class Player extends piedpipers.sim.Player {
 
         return strategy.getMove(this, scene).asPoint();
 	}
+
+    @Override
+    public void addDot(Point p, Color c) {
+        if (SHOW_DOTS) {
+            super.addDot(p,c);
+        }
+    }
+
+    @Override
+    public void addDot(Point p, Color c, double d) {
+        if (SHOW_DOTS) {
+            super.addDot(p,c,d);
+        }
+    }
 
     public void setStrategy(Strategy newStrategy) {
         if (DEBUG) {

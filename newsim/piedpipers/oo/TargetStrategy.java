@@ -27,9 +27,9 @@ public class TargetStrategy implements Strategy {
 
     public Vector getSideOfGate(Scene s, Scene.Side side) {
         if (side == Scene.Side.RIGHT) {
-            return s.getGatePosition().add_ip(GATE_BUFFER, 0);
+            return s.getGatePosition().add(GATE_BUFFER, 0);
         } else {
-            return s.getGatePosition().sub_ip(GATE_BUFFER, 0);
+            return s.getGatePosition().sub(GATE_BUFFER, 0);
         }
     }
 
@@ -84,7 +84,7 @@ public class TargetStrategy implements Strategy {
             difference = new Vector(0,0);
         }
 
-        double step_size = Math.min(p.getSpeed(), difference.length());
+        double step_size = Math.min(p.getSpeed() * .99, difference.length());
 
         if (step_size == 0) {
             if (!this.intermediate_target.equals(this.target)) {
@@ -93,9 +93,9 @@ public class TargetStrategy implements Strategy {
             return position;
         }
 
-        Vector step = difference.unit_ip().scale_ip(step_size).add_ip(position);
+        Vector step = difference.unit().scale(step_size);
 
-        return step;
+        return position.add(step);
     }
 
     private boolean reachedTarget(Player p, Scene s) {
