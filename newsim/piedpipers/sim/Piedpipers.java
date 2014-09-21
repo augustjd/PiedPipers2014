@@ -28,7 +28,7 @@ public class Piedpipers {
 	static boolean recompile = true;
 
 	// print more details?
-	static boolean verbose = true;
+	static boolean verbose = false;
 
 	// Step by step trace
 	static boolean trace = true;
@@ -40,12 +40,19 @@ public class Piedpipers {
 	static int DEFAULT_PIPERS = 1;
 	static int DEFAULT_RATS = 10;
 
-	static double WALK_DIST = 10.0; // <10m, rats walk with music piper
+	public static double WALK_DIST = 10.0; // <10m, rats walk with music piper
 	static double STOP_DIST = 2.0; // <2m, rats stop
 
 	public static double WALK_SPEED = 0.1; // 1m/s, walking speed for rats
 	public static double MUSICPIPER_SPEED = 0.1; // 1m/s, walking speed for music piper
 	public static double PIPER_SPEED = 0.5; // 5m/s, walking speed for no music piper
+
+    public static double RAT_DRAW_RADIUS = 4.0;
+    public static double PIPER_DRAW_RADIUS = 4.0;
+
+    public static final Color DEFAULT_RAT_COLOR = Color.GREEN;
+    public static final Color DEFAULT_PIPER_COLOR = Color.YELLOW;
+    public static final Color DEFAULT_MUSIC_PIPER_COLOR = new Color(50,150,250,100);
 
 	static double OPEN_LEFT; // left side of center opening
 	static double OPEN_RIGHT; // right side of center opening
@@ -54,6 +61,23 @@ public class Piedpipers {
 	static int seed;
 	static Random random;
 	public static int[] thetas;
+
+    List<Dot> dots = new ArrayList<Dot>();
+
+    public static class Dot {
+        Point v;
+        Color c;
+        double radius;
+
+        public Dot(Point v, Color c) {
+            this(v,c,5.0);
+        }
+        public Dot(Point v, Color c, double radius) {
+            this.v = v;
+            this.c = c;
+            this.radius = radius;
+        }
+    }
 
 	// list files below a certain directory
 	// can filter those having a specific extension constraint
@@ -241,7 +265,7 @@ public class Piedpipers {
 			int steps = 0;
 
 			if (e.getSource() == timer)
-				steps = 10;
+				steps = 1;
 			else if (e.getSource() == next)
 				steps = 1;
 			else if (e.getSource() == next10)
@@ -327,7 +351,7 @@ public class Piedpipers {
 
 	}
 
-	class FieldPanel extends JPanel {
+	public class FieldPanel extends JPanel {
 		double PSIZE = 10;
 		double s;
 		BasicStroke stroke = new BasicStroke(2.0f);
@@ -355,13 +379,20 @@ public class Piedpipers {
 
 			g2.draw(new Line2D.Double(0.5 * dimension * s + ox, OPEN_RIGHT * s
 					+ oy, 0.5 * dimension * s + ox, dimension * s + oy));
+
+
+            drawDots(g2);
 			// draw rats
-						drawRats(g2);
+            drawRats(g2);
 			// draw pipers
 			drawPipers(g2);
-
-			
 		}
+        public void drawDots(Graphics2D g2) {
+            for (Dot d : dots) {
+                drawCircle(g2, d.v, d.radius, d.c);
+            }
+        }
+
 
 		public void drawPoint(Graphics2D g2, Point p, PType type) {
 			if (type == PType.PTYPE_MUSICPIPERS) {
@@ -390,6 +421,18 @@ public class Piedpipers {
 			g2.fill(e);
 			}
 			}
+
+		public void drawCircle(Graphics2D g2, Point p, double radius, Color c) {
+			Ellipse2D ellipse = new Ellipse2D.Double(
+                    p.x * s - radius + ox, 
+                    p.y * s - radius + oy, 
+                    radius * 2.0, 
+                    radius * 2.0);
+
+			g2.setPaint(c);
+			g2.fill(ellipse);
+        }
+
 		public void drawCircle(Graphics2D g2, Point p, PType type) {
 			Ellipse2D eOuter = new Ellipse2D.Double(p.x * s - (WALK_DIST * s) / 2 + ox, p.y
 					* s - (WALK_DIST * s) / 2 + oy, WALK_DIST * s, WALK_DIST * s);
@@ -406,16 +449,15 @@ public class Piedpipers {
 			for (int i = 0; i < npipers; ++i) {
 				if (players[i].music) {
 					drawPoint(g2, pipers[i], PType.PTYPE_MUSICPIPERS);
-					drawCircle(g2, pipers[i], PType.PTYPE_MUSICPIPERS);
-				} else {
-					drawPoint(g2, pipers[i], PType.PTYPE_PIPERS);
+                    drawCircle(g2, pipers[i], WALK_DIST / 2 * s, DEFAULT_MUSIC_PIPER_COLOR);
 				}
+                drawCircle(g2, pipers[i], PIPER_DRAW_RADIUS, piper_colors[i]);
 			}
 		}
 
 		public void drawRats(Graphics2D g2) {
 			for (int i = 0; i < nrats; ++i) {
-				drawPoint(g2, rats[i], PType.PTYPE_RAT);
+				drawCircle(g2, rats[i], RAT_DRAW_RADIUS, rat_colors[i]);
 			}
 		}
 	}
@@ -600,7 +642,6 @@ public class Piedpipers {
 		if (y3 >= OPEN_LEFT && y3 <= OPEN_RIGHT) 
 			return false;
 		else {
-			System.out.printf("hit the medium fence");
 			return true;
 		}
 	}
@@ -654,12 +695,16 @@ public class Piedpipers {
 
 		// move the player dogs
 		Point[] next = new Point[npipers];
+        this.dots.clear();
 		for (int d = 0; d < npipers; ++d) {
 			Point[] pipercopy = copyPointArray(pipers);
 
 			try {
 				//next[d] = players[d].move(pipercopy, rats, pipermusic);
-				next[d] = players[d].move(pipercopy, rats, pipermusic, thetas);
+				next[d] = players[d].move(pipercopy, rats, pipermusic, thetas, tick);
+
+                this.dots.addAll(players[d].dots);
+
 				pipermusic[d] = players[d].music;
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -675,7 +720,9 @@ public class Piedpipers {
 
 			// validate player move
 			if (!validateMove(pipers[d], next[d], d)) {
-				System.err.println("[ERROR] Invalid move, let the piper stay.");
+                if (verbose) {
+                    System.err.println("[ERROR] Invalid move, let the piper stay.");
+                }
 				// for testing purpose
 				// let's make the dog stay
 				next[d] = pipers[d];
@@ -714,10 +761,21 @@ public class Piedpipers {
 		}
 		return capturedRats;
 	}
+    void initializeColors() {
+		rat_colors   = new Color[nrats];
+        for (int i = 0; i < nrats; i++) {
+            rat_colors[i] = DEFAULT_RAT_COLOR;
+        }
+		piper_colors = new Color[npipers];
+        for (int i = 0; i < npipers; i++) {
+            piper_colors[i] = DEFAULT_PIPER_COLOR;
+        }
+    }
 	
 	void init() {
 		// initialize rats
 		rats = new Point[nrats];
+
 		thetas = new int[nrats];
 		pipermusic = new boolean[npipers];
 		for (int s = 0; s < nrats; ++s)
@@ -730,6 +788,7 @@ public class Piedpipers {
 			double y = 1.0 * d / (npipers + 1) * dimension;
 			pipers[d - 1] = new Point(x, y);
 		}
+        initializeColors();
 
 		for (int d = 0; d < npipers; ++d) {
 			players[d].init();
@@ -776,10 +835,11 @@ public class Piedpipers {
 			seed = Integer.parseInt(args[4]);
 		if (args.length >5)
 			dimension = Integer.parseInt(args[5]);
+
 		random = new Random(seed);
 		OPEN_LEFT = dimension/2-1;
 		OPEN_RIGHT = dimension/2+1;
-		System.out.printf("the open left and open right are %f and %f", OPEN_LEFT, OPEN_RIGHT);
+		//System.out.printf("the open left and open right are %f and %f", OPEN_LEFT, OPEN_RIGHT);
 		// load players
 		Player[] players = loadPlayers(group, npipers, dimension);
 
@@ -798,10 +858,14 @@ public class Piedpipers {
 
 	// players
 	Player[] players;
+
 	// dog positions
 	Point[] pipers;
+	Color[] piper_colors;
+
 	// sheep positions
 	Point[] rats;
+	Color[] rat_colors;
 	boolean[] pipermusic;
 
 	// game config
@@ -811,6 +875,9 @@ public class Piedpipers {
 	// boolean mode;
 
 	int tick = 0;
+    public int getTime() {
+        return tick;
+    }
 
 	static int dimension; // dimension of the map
 }
