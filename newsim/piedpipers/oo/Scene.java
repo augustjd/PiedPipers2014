@@ -17,7 +17,7 @@ public class Scene {
 
     int tick;
 
-    List<Vector> free_rats = null;
+    List<Integer> free_rats = null;
 
     Vector[] rat_velocities;
     int[] thetas;
@@ -33,12 +33,13 @@ public class Scene {
         OUTSIDE
     }
 
-    public List<Vector> getFreeRats() {
+    public List<Integer> getFreeRats() {
         if (free_rats == null) {
-            free_rats = new ArrayList<Vector>();
-            for (Vector v : rats) {
+            free_rats = new ArrayList<Integer>();
+            for (int i = 0; i < this.rats.length; i++) {
+                Vector v = this.rats[i];
                 if (getSide(v) == Side.RIGHT && !isRatUnderInfluenceOfAnyPiper(v)) {
-                    free_rats.add(v);
+                    free_rats.add(i);
                 }
             }
         }
@@ -55,6 +56,9 @@ public class Scene {
 			return 2;
 	}
 
+    public boolean isOnField(Vector v) {
+        return getSide(v) != Side.OUTSIDE;
+    }
     public Side getSide(Vector v) {
         if (v.x < 0 || v.y < 0 || v.x > dimension || v.y > dimension) {
             return Side.OUTSIDE;
@@ -63,6 +67,10 @@ public class Scene {
         } else {
             return Side.LEFT;
         }
+    }
+
+    public Vector getGatePosition() {
+        return new Vector(dimension/2.0, dimension/2.0);
     }
 
     public Vector getRatVelocity(int rat_index) {
