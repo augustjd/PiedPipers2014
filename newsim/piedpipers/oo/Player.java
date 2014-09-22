@@ -13,7 +13,7 @@ public class Player extends piedpipers.sim.Player {
     public void init() {
     }
 
-    public boolean SHOW_DOTS = true;
+    public boolean SHOW_DOTS = false;
 
     public static int pipers_moved = 0;
     public double getSpeed() {

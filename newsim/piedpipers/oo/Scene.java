@@ -323,6 +323,7 @@ public class Scene {
         Scene result = getScene(tick);
         if (result != null) return result;
         else {
+            System.out.format("Turn %d\n", tick);
             return addScene(new Scene(pipers, rats, music, thetas, dimension, tick));
         }
     }

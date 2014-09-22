@@ -21,7 +21,7 @@ public class TargetStrategy implements Strategy {
         this.intermediate_target = target;
     }
 
-    public static final int GATE_BUFFER = 2;
+    public static final int GATE_BUFFER = 10;
 
     public void onReachedTarget(Player p) {}
 
@@ -85,6 +85,9 @@ public class TargetStrategy implements Strategy {
         }
 
         double step_size = Math.min(p.getSpeed() * .99, difference.length());
+        if (crossed_gate) {
+            step_size = 0.05;
+        }
 
         if (step_size == 0) {
             if (!this.intermediate_target.equals(this.target)) {
