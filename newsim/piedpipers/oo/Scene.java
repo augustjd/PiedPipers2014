@@ -10,22 +10,23 @@ public class Scene {
 
     int dimension;
 
-    Vector[] pipers;
-    Vector[] rats;
+    final Vector[] pipers;
+    final Vector[] rats;
 
-    boolean[] music;
+    final boolean[] music;
 
     int tick;
 
     List<Integer> free_rats = null;
 
-    Vector[] rat_velocities;
-    int[] thetas;
+    final Vector[] rat_velocities;
+    final int[] thetas;
 
     public Vector getPiper(int index) { return pipers[index]; }
     public boolean isPlayingMusic(int index) { return music[index]; }
     public Vector getRat(int index) { return rats[index]; }
 
+    public int getNumberOfPipers() { return pipers.length; }
     public int getNumberOfRats() { return rats.length; }
     public int getTime() { return tick; }
 

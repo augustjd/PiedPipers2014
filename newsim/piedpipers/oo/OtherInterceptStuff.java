@@ -35,9 +35,8 @@ public class OtherInterceptStuff {
 	}
 	
 	// Returns the point the current piper should aim at if attempting to intercept an object at point p moving at velocity v, assuming no wall reflections
-	private Point findIntercept(Point p, Point v, double tPast) {
+	private Point findIntercept(Point p, Point v, double tPast, double s) {
 		// Adapted from http://stackoverflow.com/questions/2248876/2d-game-fire-at-a-moving-target-by-predicting-intersection-of-projectile-and-u
-		double s = getSpeed();
 		
 		double tx, ty, tvx, tvy;
 		tx =  (p.x - v.x*tPast) - current_loc.x;
@@ -67,7 +66,7 @@ public class OtherInterceptStuff {
 	}
 	
 	// Returns the point that the current piper should aim at to most quickly approach the given rat, including the effect of bouncing off walls
-	private Point findBestApproach(Point rat_pos, Point rat_v) {
+	private Point findBestApproach(Point rat_pos, Point rat_v, double speed) {
 		double [] next;
 		Point intercept = null;
 		Point sol = null;
@@ -82,7 +81,7 @@ public class OtherInterceptStuff {
 		do {
 			intercept = findIntercept(rat_pos, rat_v, t);		
 			if (intercept != null) {
-				tIntercept = distBetween(current_loc, intercept)/getSpeed();
+				tIntercept = distBetween(current_loc, intercept)/speed;
 				if (tIntercept < tBest && rightSide.contains(intercept)) {
 					tBest = tIntercept;
 					sol = intercept;

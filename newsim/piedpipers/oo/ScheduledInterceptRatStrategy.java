@@ -7,7 +7,7 @@ import java.lang.Math.*;
 import piedpipers.sim.*;
 import java.awt.Color;
 
-public class InterceptRatStrategy extends TargetStrategy {
+public class ScheduledInterceptRatStrategy extends TargetStrategy {
     List<InterceptorMath.Intercept> intercepts = null;
 
     public static List<InterceptorMath.Intercept> getInterceptTimes(Player p, Scene s) {
@@ -28,11 +28,7 @@ public class InterceptRatStrategy extends TargetStrategy {
     InterceptorMath.Intercept best = null;
     @Override
     public Vector getMove(Player p, Scene s) {
-        if (best == null || s.getPiper(p.id).distanceTo(best.location) < Piedpipers.WALK_DIST) {
-            best = null;
-            intercepts = getInterceptTimes(p, s);
-            System.out.format("Chose a new location for piper %d\n", p.id);
-        }
+        intercepts = getInterceptTimes(p, s);
         best = getBestIntercept(p,s);
         if (best == null) {
             this.target = s.getPiper(p.id);
@@ -40,6 +36,7 @@ public class InterceptRatStrategy extends TargetStrategy {
         }
         p.music = true;
         this.target = best.location;
+        best = null;
 
         return super.getMove(p,s);
     }

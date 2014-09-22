@@ -9,6 +9,9 @@ public class InterceptorMath {
     public static class Intercept {
         public double time;
         public Vector location;
+        public int rat_index;
+
+        public int number_of_bounces;
 
         public Intercept(double time, Vector location) {
             this.time = time;
@@ -119,7 +122,7 @@ public class InterceptorMath {
 		double[] sol = {0,0};
 		if (a == 0) {
 			if (b == 0) {
-                sol = null;
+                return null;
 			} else {
 				sol[0] = -c/b;
 				sol[1] = -c/b;
@@ -132,7 +135,7 @@ public class InterceptorMath {
 				sol[0] = (-b-disc)/(2*a);
 				sol[1] = (-b+disc)/(2*a);
 			} else {
-                sol = null;
+                return null;
             }
 		}
 		return sol;
@@ -145,9 +148,9 @@ public class InterceptorMath {
         Vector rat_position = s.getRat(rat);
         Vector rat_velocity = s.getRatVelocity(rat);
 
-        Vector piper_position = s.getRat(piper);
+        Vector piper_position = s.getPiper(piper);
 
-        int MAX_REFLECTION_TRIES = 5;
+        int MAX_REFLECTION_TRIES = 7;
         for (int i = 0; i < MAX_REFLECTION_TRIES; i++) {
             Double intercept_time = getInterceptTimeOnInfiniteField(
                     rat_position, 
@@ -156,34 +159,34 @@ public class InterceptorMath {
                     piper_speed);
 
             if (intercept_time != null) {
-                //System.out.format("Intercept time: %f\n", intercept_time);
                 intercept = Intercept.fromVectorsAndTime(rat_position, rat_velocity, intercept_time + total_time);
                 if (s.getSide(intercept.location) != Scene.Side.RIGHT) {
                     intercept = null;
+                } else {
+                    intercept.number_of_bounces = i;
                 }
             }
 
-            if (intercept == null) { 
-                // intercept is still null...
-                Double next_bounce_time = null;
-                Vector[] after_bounce_stuff = null;
-                try {
-                    next_bounce_time = getNextBounceTime(rat_position, rat_velocity, s.dimension);
-                    after_bounce_stuff = getRatPosVelocityAfterNextCollision(rat_position, rat_velocity, s.dimension);
-                    if (next_bounce_time == 0.0) return null;
-                    else if (next_bounce_time == null) return null; // it's going through gate
-                    else {
-                        rat_position = after_bounce_stuff[0];
-                        rat_velocity = after_bounce_stuff[1];
-
-                        total_time += next_bounce_time;
-                    }
-                } catch (NullPointerException e) {
-                    return null;
-                }
-                //System.out.format("Still no intercept! Pos/Vel after bounce in %f seconds: %s / %s\n", next_bounce_time, rat_position, rat_velocity);
-            } else {
+            if (intercept != null) { 
                 break;
+            }
+            // intercept is still null...
+            Double next_bounce_time = null;
+            Vector[] after_bounce_stuff = null;
+
+            next_bounce_time   = getNextBounceTime(rat_position, rat_velocity, s.dimension);
+            after_bounce_stuff = getRatPosVelocityAfterNextCollision(rat_position, rat_velocity, s.dimension);
+
+            if (next_bounce_time == null) return null; // it's going through gate
+            else {
+                //System.out.format("Still no intercept! Pos/Vel of %d before/after bounce in %f seconds: %s / %s : %s / %s\n", 
+                //        rat, next_bounce_time, after_bounce_stuff[0], after_bounce_stuff[1], rat_position, rat_velocity);
+                // we have to move it away from the wall so subsequent bounces will be calculated correctly.
+                double buffer_ticks = 3.0;
+                rat_position = after_bounce_stuff[0].add(after_bounce_stuff[1].scale(buffer_ticks));
+                rat_velocity = after_bounce_stuff[1];
+
+                total_time += next_bounce_time + buffer_ticks;
             }
         }
 
@@ -200,16 +203,29 @@ public class InterceptorMath {
         final double b = 2 * v.dot(o);
         final double c = o.dot(o);
 
+        double EPSILON = 0.0001;
+        if (Math.abs(s*s - v.dot(v)) < EPSILON) {
+            //System.out.format("Speeds are the same! c: %f, b: %f, Solution: %f\n", c, b, Math.abs(c/b));
+            if (b >= 0) {
+                return null;
+            }
+            return -c / b;
+        }
+
         double[] solutions = solveQuad(a,b,c);
         if (solutions == null) {
             return null;
         } else {
-            double soln = Math.max(solutions[0], solutions[1]);
+            double soln = Math.min(solutions[0], solutions[1]);
             if (soln < 0.0) {
-                return Math.max(solutions[0], solutions[1]);
-            } else {
-                return soln;
+                soln = Math.max(solutions[0], solutions[1]);
             }
+
+            if (soln <= 0.0) {
+                return null;
+            }
+
+            return soln;
         }
     }
     public static Double getMinPositiveQuadraticSolution(final double a, final double b, final double c) {

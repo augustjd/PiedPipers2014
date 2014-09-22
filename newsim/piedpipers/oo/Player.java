@@ -31,38 +31,12 @@ public class Player extends piedpipers.sim.Player {
                       boolean[] music, 
                       int[] thetas, 
                       int tick) {
-        Scene scene = null;
+        Scene scene = Scene.getOrCreateScene(pipers, rats, music, thetas, dimension, tick);
 
-        if (pipers_moved == 0) {
-            scene = Scene.getOrCreateScene(pipers, rats, music, thetas, dimension, tick);
-
-            Scene next = scene;
-            Scene second_next = scene;
-            try {
-                next = next.lookAhead(10);
-                second_next = scene.altLookAhead(10);
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            this.clearDots();
-            for (int i = 0; i < rats.length; i++) {
-                //addDot(next.getRat(i).asPoint(), Color.BLUE);
-                //addDot(second_next.getRat(i).asPoint(), Color.RED);
-                Vector next_bounce = InterceptorMath.getNextBounceLocation(i, scene);
-                if (next_bounce != null) {
-                    addDot(next_bounce.asPoint(), new Color(0.0f,0.5f,0.9f,0.5f), 4.0);
-                }
-                //addDot(second_next.getRat(i).asPoint(), Color.RED);
-            }
-        }
-
+        this.clearDots();
         if (this.strategy == null) {
             this.strategy = new CrossGateStrategy(scene);
         }
-
-        pipers_moved = (pipers_moved + 1) % pipers.length;
-
 
         return strategy.getMove(this, scene).asPoint();
 	}
@@ -86,5 +60,18 @@ public class Player extends piedpipers.sim.Player {
             System.out.format("Rat %d %s --> \033[33m%s\033[0m\n", this.id, strategy.getName(), newStrategy.getName());
         }
         this.strategy = newStrategy;
+    }
+    public void drawBounces(Scene scene) {
+
+            this.clearDots();
+            for (int i = 0; i < scene.getNumberOfRats(); i++) {
+                //addDot(next.getRat(i).asPoint(), Color.BLUE);
+                //addDot(second_next.getRat(i).asPoint(), Color.RED);
+                Vector next_bounce = InterceptorMath.getNextBounceLocation(i, scene);
+                if (next_bounce != null) {
+                    addDot(next_bounce.asPoint(), new Color(0.0f,0.5f,0.9f,0.5f), 4.0);
+                }
+                //addDot(second_next.getRat(i).asPoint(), Color.RED);
+            }
     }
 }
