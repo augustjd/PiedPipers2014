@@ -23,12 +23,21 @@ public class Scene {
     final int[] thetas;
 
     public Vector getPiper(int index) { return pipers[index]; }
+    public double getPiperSpeed(int index) { 
+        if (music[index]) {
+            return Piedpipers.MUSICPIPER_SPEED;
+        } else {
+            return Piedpipers.PIPER_SPEED;
+        }
+    }
     public boolean isPlayingMusic(int index) { return music[index]; }
     public Vector getRat(int index) { return rats[index]; }
 
     public int getNumberOfPipers() { return pipers.length; }
     public int getNumberOfRats() { return rats.length; }
     public int getTime() { return tick; }
+
+    public double getRatDensity() { return this.getFreeRats().size() / (dimension * dimension / 2.0); }
 
     public enum Side {
         LEFT,
@@ -45,6 +54,7 @@ public class Scene {
                     free_rats.add(i);
                 }
             }
+            System.out.format("# of Free Rats: %d, Rat density: %f\n", this.getFreeRats().size(), this.getRatDensity());
         }
 
         return free_rats;

@@ -90,7 +90,8 @@ public class InterceptorMath {
             // bounce is against bottom wall.
             bounce_velocity.y = -bounce_velocity.y;
         } else {
-            System.out.println("Something fishy happened in getVelocityAfterNextCollision().");
+            System.out.format("Something fishy happened in getVelocityAfterNextCollision().\n" +
+                              "Predicted bounce position: %s\n", bounce_position.toString());
             return null;
         }
 

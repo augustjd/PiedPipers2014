@@ -23,7 +23,7 @@ public class TargetStrategy implements Strategy {
 
     public static final int GATE_BUFFER = 10;
 
-    public void onReachedTarget(Player p) {}
+    public void onReachedTarget(Player p, Scene s) {}
 
     public Vector getSideOfGate(Scene s, Scene.Side side) {
         if (side == Scene.Side.RIGHT) {
@@ -42,17 +42,20 @@ public class TargetStrategy implements Strategy {
     }
 
     boolean crossed_gate = false;
+    boolean finished_crossing = false;
 
-    public Vector getGateTarget(Scene.Side player_side, Scene.Side destination_side, Scene s, Player p) {
+    public Vector getGateTarget(Scene.Side player_side, Scene.Side destination_side, Player p, Scene s) {
         Vector position = s.getPiper(p.id);
-        if (position.equals(this.intermediate_target)) {
-            if (crossed_gate) {
-                return this.target;
-            } else {
-                crossed_gate = true;
-                return getSideOfGate(s, destination_side);
+
+        if (crossed_gate) {
+            if (getSideOfGate(s, destination_side).equals(position)) {
+                finished_crossing = true;
             }
+            return getSideOfGate(s, destination_side);
         } else {
+            if (getSideOfGate(s, player_side).equals(position)) {
+                crossed_gate = true;
+            }
             return getSideOfGate(s, player_side);
         }
     }
@@ -62,14 +65,14 @@ public class TargetStrategy implements Strategy {
         Vector position = s.getPiper(p.id);
 
         if (position.equals(target)) {
-            onReachedTarget(p);
+            onReachedTarget(p, s);
         }
 
         Scene.Side player_side      = s.getSide(position);
         Scene.Side destination_side = s.getSide(this.target);
 
-        if (player_side != destination_side && !position.equals(intermediate_target)) {
-            this.intermediate_target = s.getGatePosition();
+        if (player_side != destination_side && !finished_crossing) {
+            this.intermediate_target = getGateTarget(player_side, destination_side, p, s);
         } else {
             this.intermediate_target = this.target;
         }
@@ -85,9 +88,6 @@ public class TargetStrategy implements Strategy {
         }
 
         double step_size = Math.min(p.getSpeed() * .99, difference.length());
-        if (crossed_gate) {
-            step_size = 0.05;
-        }
 
         if (step_size == 0) {
             if (!this.intermediate_target.equals(this.target)) {

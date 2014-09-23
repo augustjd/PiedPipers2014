@@ -9,12 +9,15 @@ import java.awt.Color;
 
 public class ReturnToGateStrategy extends TargetStrategy {
     public ReturnToGateStrategy(Scene s) {
-        super(s.getGatePosition().sub(32,12));
+        super(s.getGatePosition().sub(100,12));
     }
 
     @Override
-    public void onReachedTarget(Player p) {
-        p.music = false;
+    public void onReachedTarget(Player p, Scene s) {
+        if (s.getFreeRats().size() > 0) {
+            p.music = false;
+            p.setStrategy(new InterceptRatStrategy());
+        }
     }
 
     @Override

@@ -9,6 +9,8 @@ import java.awt.Color;
 
 public class InterceptRatStrategy extends TargetStrategy {
     List<InterceptorMath.Intercept> intercepts = null;
+    public boolean do_partitions = true;
+    public boolean do_closest_partition = false;
 
     public static List<InterceptorMath.Intercept> getInterceptTimes(Player p, Scene s) {
         List<InterceptorMath.Intercept> result = new ArrayList<InterceptorMath.Intercept>();
@@ -35,6 +37,9 @@ public class InterceptRatStrategy extends TargetStrategy {
         if (s.getFreeRats().size() == 0) {
             p.setStrategy(new ReturnToGateStrategy(s));
         }
+        Vector me = s.getPiper(p.id);
+        Vector closest = getClosestRat(p,s);
+
         if (best == null || nearTarget(p,s)) {
             best = null;
             intercepts = getInterceptTimes(p, s);
@@ -49,7 +54,7 @@ public class InterceptRatStrategy extends TargetStrategy {
             p.music = true;
         }
         if (best == null) {
-            this.target = s.getPiper(p.id);
+            this.target = getClosestRat(p,s);
             return super.getMove(p,s);
         }
         this.target = best.location;
@@ -57,7 +62,35 @@ public class InterceptRatStrategy extends TargetStrategy {
         return super.getMove(p,s);
     }
 
+    public Vector getClosestRat(Player p, Scene s) {
+        double best = Double.POSITIVE_INFINITY;
+        Vector me = s.getPiper(p.id);
+        Vector best_rat = null;
+        for (Integer i : s.getFreeRats()) {
+            if (s.getRat(i).distanceTo(me) < best) {
+                best = s.getRat(i).distanceTo(me);
+                best_rat = s.getRat(i);
+            }
+        }
+        return best_rat;
+    }
+
     public boolean inMyPartition(Player p, Scene s, InterceptorMath.Intercept i) {
+       if (!do_partitions) return true;
+       else if (s.getFreeRats().size() < 5) return true;
+       if (do_closest_partition) {
+            for (int j = 0; j < s.getNumberOfPipers(); j++) {
+                if (j == p.id) continue;
+                InterceptorMath.Intercept intercept = InterceptorMath.getSoonestIntercept(
+                                                          i.rat_index, j, s.getPiperSpeed(j), s);
+
+                if (intercept != null && intercept.time <= i.time) {
+                    return false;
+                }
+            }
+            return true;
+       }
+
        double partition_size = s.dimension / s.getNumberOfPipers();
        double top_of_mine    = p.id * partition_size;
        double bottom_of_mine = (p.id + 1) * partition_size;

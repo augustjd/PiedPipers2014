@@ -26,39 +26,48 @@ public class Player extends piedpipers.sim.Player {
 
     Strategy strategy = null;
 
+    public static int tick = 0;
 	public Point move(Point[] pipers, 
                       Point[] rats, 
                       boolean[] music, 
-                      int[] thetas, 
-                      int tick) {
+                      int[] thetas) {
         Scene scene = Scene.getOrCreateScene(pipers, rats, music, thetas, dimension, tick);
+        tick++;
 
-        this.clearDots();
         if (this.strategy == null) {
-            this.strategy = new CrossGateStrategy(scene);
+            this.strategy = new CrossGateStrategy(this, scene);
+        }
+        if (DEBUG) {
+            System.out.format("Rat %d %s\n", this.id, strategy.getName());
         }
 
         return strategy.getMove(this, scene).asPoint();
 	}
 
-    @Override
     public void addDot(Point p, Color c) {
         if (SHOW_DOTS) {
             super.addDot(p,c);
         }
     }
 
-    @Override
     public void addDot(Point p, Color c, double d) {
         if (SHOW_DOTS) {
             super.addDot(p,c,d);
         }
     }
 
+    public void setDefaultStrategy(Scene s) {
+        setStrategy(
+            new PhaseStrategy(new PhaseStrategy.Phase[] {
+                    //new PhaseStrategy.AlwaysPhase(new VerticalSweepStrategy(p,s)),
+                    //new PhaseStrategy.DensityPhase(0.002, Double.POSITIVE_INFINITY, new VerticalSweepStrategy(this, s)),
+                    new PhaseStrategy.AlwaysPhase(new InterceptRatStrategy())
+                }, 
+                new ReturnToGateStrategy(s) // default strategy
+            )
+        );
+    }
     public void setStrategy(Strategy newStrategy) {
-        if (DEBUG) {
-            System.out.format("Rat %d %s --> \033[33m%s\033[0m\n", this.id, strategy.getName(), newStrategy.getName());
-        }
         this.strategy = newStrategy;
     }
     public void drawBounces(Scene scene) {
