@@ -8,6 +8,17 @@ import piedpipers.sim.*;
 import java.awt.Color;
 
 public class VerticalSweepStrategy extends TargetStrategy {
+    public static class VerticalSweepPhase extends PhaseStrategy.Phase {
+        public VerticalSweepPhase(Player p, Scene s) {
+            super(new VerticalSweepStrategy(p,s));
+        }
+        public double fudge = 0.0;
+        public boolean shouldBeActive(Player p, Scene s) {
+            double portion = (s.dimension/2.0) / s.getNumberOfPipers();
+
+            return portion - (Piedpipers.WALK_DIST * 2) - fudge < 0;
+        }
+    }
     Stage stage;
     public VerticalSweepStrategy(Player p, Scene s) {
         stage = Stage.GETTING_TO_TOP;
@@ -22,6 +33,9 @@ public class VerticalSweepStrategy extends TargetStrategy {
     boolean greedy_strategy = false;
 
     public Vector getMove(Player player, Scene s) {
+        if (s.getFreeRats().size() == 0) {
+            player.setStrategy(new ReturnToGateStrategy(s));
+        }
         this.stage = determineStage(player, s);
 
         if (stage == Stage.GETTING_TO_TOP) {
@@ -58,7 +72,7 @@ public class VerticalSweepStrategy extends TargetStrategy {
             return Stage.GETTING_TO_TOP;
         }
     }
-    public double buffer = 50.0;
+    public double buffer = Piedpipers.WALK_DIST;
 
     public Vector getTopTarget(int piper_id, Scene s) {
         double increment  = (s.dimension/2.0) / s.getNumberOfPipers();

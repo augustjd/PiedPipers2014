@@ -21,7 +21,7 @@ public class TargetStrategy implements Strategy {
         this.intermediate_target = target;
     }
 
-    public static final int GATE_BUFFER = 10;
+    public static final int GATE_BUFFER = 20;
 
     public void onReachedTarget(Player p, Scene s) {}
 

@@ -59,7 +59,7 @@ public class Scene {
         return free_rats;
     }
 
-    static int getPiperClosestToRat(int piper, int rat) {
+    int getPiperClosestToRat(int rat) {
         double best_distance = Double.POSITIVE_INFINITY;
         Vector rat_vec = rats[rat];
         int best_piper = -1;
@@ -95,7 +95,7 @@ public class Scene {
     }
 
     public Vector getGatePosition() {
-        return new Vector(dimension/2.0, dimension/2.0);
+        return new Vector(dimension/2.0, dimension/2.0 + 0.25);
     }
 
     public Vector getRatVelocity(int rat_index) {
@@ -103,7 +103,7 @@ public class Scene {
     }
 
     public boolean isRatUnderInfluenceOfPiper(Vector rat, int piper_index) {
-        return music[piper_index] && rat.distanceTo(getPiper(piper_index)) < Piedpipers.WALK_DIST;
+        return music[piper_index] && rat.distanceTo(getPiper(piper_index)) < (Piedpipers.WALK_DIST * 0.90);
     }
 
     public boolean isRatUnderInfluenceOfAnyPiper(Vector rat) {

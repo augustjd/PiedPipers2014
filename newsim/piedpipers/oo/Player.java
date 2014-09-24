@@ -59,10 +59,8 @@ public class Player extends piedpipers.sim.Player {
     public void setDefaultStrategy(Scene s) {
         setStrategy(
             new PhaseStrategy(new PhaseStrategy.Phase[] {
-                    new PhaseStrategy.DensityPhase(0.0, 0.00035, new PickerCollectorStrategy(this,s)),
-                    //new PhaseStrategy.AlwaysPhase(new VerticalSweepStrategy(this,s)),
-                    //new PhaseStrategy.AlwaysPhase(new PickerCollectorStrategy(this, s)),
-                    //new PhaseStrategy.DensityPhase(0.002, Double.POSITIVE_INFINITY, new VerticalSweepStrategy(this, s)),
+                    new PickerCollectorStrategy.PickerCollectorPhase(this,s),
+                    new VerticalSweepStrategy.VerticalSweepPhase(this,s),
                     new PhaseStrategy.AlwaysPhase(new InterceptRatStrategy())
                 }, 
                 new ReturnToGateStrategy(s) // default strategy

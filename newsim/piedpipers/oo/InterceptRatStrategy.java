@@ -34,10 +34,13 @@ public class InterceptRatStrategy extends TargetStrategy {
     }
     @Override
     public Vector getMove(Player p, Scene s) {
-        if (s.getFreeRats().size() == 0 || 
-            s.getFreeRats().size() < s.getNumberOfPipers() && amISoonestIntercept(p,s,best.rat_index)) {
-            p.setStrategy(new ReturnToGateStrategy(s));
+        try {
+            if (s.getFreeRats().size() == 0) {
+                p.setStrategy(new ReturnToGateStrategy(s));
+            }
+        } catch (NullPointerException e) {
         }
+
         Vector me = s.getPiper(p.id);
         Vector closest = s.getRat(getClosestRat(p,s));
 
@@ -54,15 +57,12 @@ public class InterceptRatStrategy extends TargetStrategy {
             p.music = true;
         }
         if (best == null) {
-            p.setStrategy(new ReturnToGateStrategy(s));
-            /*
             Integer closestRat = getClosestRat(p,s);
-            if (closestRat != null && amISoonestIntercept(p,s,closestRat)) {
+            if (closestRat != null && s.getPiperClosestToRat(closestRat) == p.id) {
                 this.target = s.getRat(closestRat);
             } else {
                 p.setStrategy(new ReturnToGateStrategy(s));
             }
-            */
             return super.getMove(p,s);
         }
         this.target = best.location;
@@ -116,17 +116,6 @@ public class InterceptRatStrategy extends TargetStrategy {
                 (ignore_partitions || inMyPartition(p,s,i)) &&
                 (best == null || i.time < best.time)) {
                 best = i;
-            }
-        }
-        if (best == null) {
-            for (InterceptorMath.Intercept i : intercepts) {
-                if (s.getSide(i.location) == Scene.Side.RIGHT &&
-                    (best == null || i.time < best.time)) {
-                    best = i;
-                }
-            }
-            if (best != null) {
-                System.err.format("Player %d is leaving his zone, because there were no intercepts there.\n", p.id);
             }
         }
         return best;

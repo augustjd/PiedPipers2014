@@ -9,7 +9,7 @@ import java.awt.Color;
 
 public class ReturnToGateStrategy extends TargetStrategy {
     public ReturnToGateStrategy(Scene s) {
-        super(s.getGatePosition().sub(100,12));
+        super(s.getGatePosition().sub(20,20));
     }
 
     @Override
