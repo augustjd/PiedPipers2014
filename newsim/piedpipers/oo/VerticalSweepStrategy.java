@@ -18,7 +18,7 @@ public class VerticalSweepStrategy extends TargetStrategy {
         MOVING_DOWN;
     }
 
-    boolean wait_for_everyone = false;
+    boolean wait_for_everyone = true;
     boolean greedy_strategy = false;
 
     public Vector getMove(Player player, Scene s) {
@@ -58,12 +58,13 @@ public class VerticalSweepStrategy extends TargetStrategy {
             return Stage.GETTING_TO_TOP;
         }
     }
+    public double buffer = 50.0;
 
     public Vector getTopTarget(int piper_id, Scene s) {
         double increment  = (s.dimension/2.0) / s.getNumberOfPipers();
         double x_position = (s.dimension/2.0) + (piper_id + 0.5) * increment;
 
-        return new Vector(x_position, Piedpipers.WALK_DIST);
+        return new Vector(x_position, buffer);
     }
 
     public Vector getBottomTarget(int piper_id, Scene s) {
@@ -72,7 +73,7 @@ public class VerticalSweepStrategy extends TargetStrategy {
         double increment  = (s.dimension/2.0) / s.getNumberOfPipers();
         double x_position = (s.dimension/2.0) + (piper_id + 0.5) * increment;
 
-        return new Vector(x_position, s.dimension - Piedpipers.WALK_DIST);
+        return new Vector(x_position, s.dimension - buffer);
     }
     public Vector getClosestRatBeneath(int piper_id, Scene s) {
         double min_distance = Double.POSITIVE_INFINITY;

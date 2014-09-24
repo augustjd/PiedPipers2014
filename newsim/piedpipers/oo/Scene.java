@@ -54,10 +54,22 @@ public class Scene {
                     free_rats.add(i);
                 }
             }
-            System.out.format("# of Free Rats: %d, Rat density: %f\n", this.getFreeRats().size(), this.getRatDensity());
         }
 
         return free_rats;
+    }
+
+    static int getPiperClosestToRat(int piper, int rat) {
+        double best_distance = Double.POSITIVE_INFINITY;
+        Vector rat_vec = rats[rat];
+        int best_piper = -1;
+        for (int i = 0; i < pipers.length; i++) {
+            if (pipers[i].distanceTo(rat_vec) < best_distance) {
+                best_distance = pipers[i].distanceTo(rat_vec);
+                best_piper = i;
+            }
+        }
+        return best_piper;
     }
 
 	static int getSide(double x, double y, int dimension) {
@@ -331,11 +343,13 @@ public class Scene {
                                          int dimension,
                                          int tick) {
         Scene result = getScene(tick);
-        if (result != null) return result;
-        else {
-            System.out.format("Turn %d\n", tick);
-            return addScene(new Scene(pipers, rats, music, thetas, dimension, tick));
+        if (result == null) {
+            result = new Scene(pipers, rats, music, thetas, dimension, tick);
+            System.out.format("Turn %d RatsRemaining %d\n", tick, result.getFreeRats().size());
+            addScene(result);
         }
+
+        return result;
     }
 
     public static Scene addScene(Scene s) {

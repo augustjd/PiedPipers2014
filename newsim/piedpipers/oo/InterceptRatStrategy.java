@@ -34,11 +34,12 @@ public class InterceptRatStrategy extends TargetStrategy {
     }
     @Override
     public Vector getMove(Player p, Scene s) {
-        if (s.getFreeRats().size() == 0) {
+        if (s.getFreeRats().size() == 0 || 
+            s.getFreeRats().size() < s.getNumberOfPipers() && amISoonestIntercept(p,s,best.rat_index)) {
             p.setStrategy(new ReturnToGateStrategy(s));
         }
         Vector me = s.getPiper(p.id);
-        Vector closest = getClosestRat(p,s);
+        Vector closest = s.getRat(getClosestRat(p,s));
 
         if (best == null || nearTarget(p,s)) {
             best = null;
@@ -47,14 +48,21 @@ public class InterceptRatStrategy extends TargetStrategy {
             if (best == null) {
                 best = getBestIntercept(p,s, false);
             }
-            System.out.format("Chose a new location for piper %d\n", p.id);
         }
 
         if (best != null && nearTarget(p,s)) {
             p.music = true;
         }
         if (best == null) {
-            this.target = getClosestRat(p,s);
+            p.setStrategy(new ReturnToGateStrategy(s));
+            /*
+            Integer closestRat = getClosestRat(p,s);
+            if (closestRat != null && amISoonestIntercept(p,s,closestRat)) {
+                this.target = s.getRat(closestRat);
+            } else {
+                p.setStrategy(new ReturnToGateStrategy(s));
+            }
+            */
             return super.getMove(p,s);
         }
         this.target = best.location;
@@ -62,34 +70,38 @@ public class InterceptRatStrategy extends TargetStrategy {
         return super.getMove(p,s);
     }
 
-    public Vector getClosestRat(Player p, Scene s) {
+    public Integer getClosestRat(Player p, Scene s) {
         double best = Double.POSITIVE_INFINITY;
         Vector me = s.getPiper(p.id);
-        Vector best_rat = null;
+        Integer best_rat = null;
         for (Integer i : s.getFreeRats()) {
             if (s.getRat(i).distanceTo(me) < best) {
                 best = s.getRat(i).distanceTo(me);
-                best_rat = s.getRat(i);
+                best_rat = i;
             }
         }
         return best_rat;
     }
 
+    public boolean amISoonestIntercept(Player p, Scene s, int rat) {
+        return amISoonestIntercept(p, s, InterceptorMath.getSoonestIntercept(rat, p.id, p.getSpeed(), s));
+    }
+    public boolean amISoonestIntercept(Player p, Scene s, InterceptorMath.Intercept i) {
+        for (int j = 0; j < s.getNumberOfPipers(); j++) {
+            if (j == p.id) continue;
+            InterceptorMath.Intercept intercept = InterceptorMath.getSoonestIntercept(
+                                                      i.rat_index, j, s.getPiperSpeed(j), s);
+
+            if (intercept != null && intercept.time <= i.time) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public boolean inMyPartition(Player p, Scene s, InterceptorMath.Intercept i) {
        if (!do_partitions) return true;
-       else if (s.getFreeRats().size() < 5) return true;
-       if (do_closest_partition) {
-            for (int j = 0; j < s.getNumberOfPipers(); j++) {
-                if (j == p.id) continue;
-                InterceptorMath.Intercept intercept = InterceptorMath.getSoonestIntercept(
-                                                          i.rat_index, j, s.getPiperSpeed(j), s);
-
-                if (intercept != null && intercept.time <= i.time) {
-                    return false;
-                }
-            }
-            return true;
-       }
+       if (do_closest_partition) return amISoonestIntercept(p,s,i);
 
        double partition_size = s.dimension / s.getNumberOfPipers();
        double top_of_mine    = p.id * partition_size;
@@ -106,8 +118,20 @@ public class InterceptRatStrategy extends TargetStrategy {
                 best = i;
             }
         }
+        if (best == null) {
+            for (InterceptorMath.Intercept i : intercepts) {
+                if (s.getSide(i.location) == Scene.Side.RIGHT &&
+                    (best == null || i.time < best.time)) {
+                    best = i;
+                }
+            }
+            if (best != null) {
+                System.err.format("Player %d is leaving his zone, because there were no intercepts there.\n", p.id);
+            }
+        }
         return best;
     }
+
     InterceptorMath.Intercept getBestIntercept(Player p, Scene s) {
         return getBestIntercept(p,s,false);
     }

@@ -8,7 +8,7 @@ import piedpipers.oo.InterceptorMath;
 
 import java.awt.Color;
 public class Player extends piedpipers.sim.Player {
-    public static final boolean DEBUG = true;
+    public static final boolean DEBUG = false;
 
     public void init() {
     }
@@ -59,7 +59,9 @@ public class Player extends piedpipers.sim.Player {
     public void setDefaultStrategy(Scene s) {
         setStrategy(
             new PhaseStrategy(new PhaseStrategy.Phase[] {
-                    //new PhaseStrategy.AlwaysPhase(new VerticalSweepStrategy(p,s)),
+                    new PhaseStrategy.DensityPhase(0.0, 0.00035, new PickerCollectorStrategy(this,s)),
+                    //new PhaseStrategy.AlwaysPhase(new VerticalSweepStrategy(this,s)),
+                    //new PhaseStrategy.AlwaysPhase(new PickerCollectorStrategy(this, s)),
                     //new PhaseStrategy.DensityPhase(0.002, Double.POSITIVE_INFINITY, new VerticalSweepStrategy(this, s)),
                     new PhaseStrategy.AlwaysPhase(new InterceptRatStrategy())
                 }, 
