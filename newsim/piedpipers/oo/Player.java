@@ -18,13 +18,20 @@ public class Player extends piedpipers.sim.Player {
     public static int pipers_moved = 0;
     public double getSpeed() {
         if (this.music) {
-            return Piedpipers.MUSICPIPER_SPEED;
+            return Player.MUSICPIPER_SPEED;
         } else {
-            return Piedpipers.PIPER_SPEED;
+            return Player.PIPER_SPEED;
         }
     }
 
     Strategy strategy = null;
+
+	public static double WALK_DIST = 10.0; // <10m, rats walk with music piper
+	public static double STOP_DIST = 2.0; // <2m, rats stop
+
+	public static double WALK_SPEED = 0.1; // 1m/s, walking speed for rats
+	public static double MUSICPIPER_SPEED = 0.1; // 1m/s, walking speed for music piper
+	public static double PIPER_SPEED = 0.5; // 5m/s, walking speed for no music piper
 
     public static int tick = 0;
 	public Point move(Point[] pipers, 
@@ -46,13 +53,11 @@ public class Player extends piedpipers.sim.Player {
 
     public void addDot(Point p, Color c) {
         if (SHOW_DOTS) {
-            super.addDot(p,c);
         }
     }
 
     public void addDot(Point p, Color c, double d) {
         if (SHOW_DOTS) {
-            super.addDot(p,c,d);
         }
     }
 
@@ -63,7 +68,7 @@ public class Player extends piedpipers.sim.Player {
                     new VerticalSweepStrategy.VerticalSweepPhase(this,s),
                     new PhaseStrategy.AlwaysPhase(new InterceptRatStrategy())
                 }, 
-                new ReturnToGateStrategy(s) // default strategy
+                new ReturnToGateStrategy(this, s) // default strategy
             )
         );
     }
@@ -71,8 +76,6 @@ public class Player extends piedpipers.sim.Player {
         this.strategy = newStrategy;
     }
     public void drawBounces(Scene scene) {
-
-            this.clearDots();
             for (int i = 0; i < scene.getNumberOfRats(); i++) {
                 //addDot(next.getRat(i).asPoint(), Color.BLUE);
                 //addDot(second_next.getRat(i).asPoint(), Color.RED);

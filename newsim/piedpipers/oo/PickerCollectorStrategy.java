@@ -15,12 +15,21 @@ public class PickerCollectorStrategy implements Strategy {
             super(new PickerCollectorStrategy(p,s));
         }
         public boolean shouldBeActive(Player p, Scene s) {
-            double min_density = 0.0;
-            double max_density = 0.00035;
+            double small_board_min_density = 0.0;
+            double small_board_max_density = 0.0009;
 
-            return s.getNumberOfPipers() > 3 && 
-                s.getRatDensity() > min_density && 
-                s.getRatDensity() <= max_density;
+            double large_board_min_density = 0.0;
+            double large_board_max_density = 0.00035;
+
+            if (s.dimension >= 400) {
+                return s.getNumberOfPipers() > 3 && 
+                    s.getRatDensity() > large_board_min_density && 
+                    s.getRatDensity() <= large_board_max_density;
+            } else {
+                return s.getNumberOfPipers() > 3 && 
+                    s.getRatDensity() > small_board_min_density && 
+                    s.getRatDensity() <= small_board_max_density;
+            }
         }
     }
     Strategy inner;
@@ -35,7 +44,7 @@ public class PickerCollectorStrategy implements Strategy {
     public Vector getMove(Player p, Scene s) {
         if (s.getFreeRats().size() == 0 ||
             s.getFreeRats().size() < s.getNumberOfPipers() && !amIClosest(p,s)) {
-            p.setStrategy(new ReturnToGateStrategy(s));
+            p.setStrategy(new ReturnToGateStrategy(p, s));
         }
         p.music = true;
         return inner.getMove(p,s);

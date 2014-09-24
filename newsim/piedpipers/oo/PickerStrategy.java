@@ -71,7 +71,7 @@ public class PickerStrategy extends TargetStrategy{
 	        			if(j != p.id)
 	        			{
 	        				double dist = s.rats[i].distanceTo(s.pipers[j]);
-	        				if(dist < Piedpipers.WALK_DIST && s.music[j]) // the rat is attracted by a piper
+	        				if(dist < Player.WALK_DIST && s.music[j]) // the rat is attracted by a piper
 	        				{
 	        					flag_already_attracted = true;
 	        					break;
@@ -81,7 +81,7 @@ public class PickerStrategy extends TargetStrategy{
 	        		if(!flag_already_attracted)
 	        		{
 	        			double dist = s.rats[i].distanceTo(s.pipers[p.id]);
-	        			if(dist < Piedpipers.WALK_DIST)
+	        			if(dist < Player.WALK_DIST)
 	        			{
 	        				return true;
 	        			}
@@ -109,7 +109,7 @@ public class PickerStrategy extends TargetStrategy{
         		for(int j = 0; j < s.pipers.length; j++)
         		{
         			double dist1 = s.rats[i].distanceTo(s.getPiper(j));
-        			if(dist1 < Piedpipers.WALK_DIST && s.music[j]) // the rat is attracted by a piper
+        			if(dist1 < Player.WALK_DIST && s.music[j]) // the rat is attracted by a piper
         			{
         				flag_already_attracted = true;
         				break;
@@ -252,7 +252,7 @@ public class PickerStrategy extends TargetStrategy{
             Vector target = getTargetRatPosition(s);
             // sunyun change it
             if(target != null)
-            	return position.distanceTo(target) < Piedpipers.WALK_DIST &&
+            	return position.distanceTo(target) < Player.WALK_DIST &&
                 s.getSide(position) == s.getSide(target);
             else
             	return false;

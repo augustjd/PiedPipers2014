@@ -30,13 +30,13 @@ public class InterceptRatStrategy extends TargetStrategy {
     InterceptorMath.Intercept best = null;
 
     boolean nearTarget(Player p, Scene s) {
-        return s.getPiper(p.id).distanceTo(best.location) < Piedpipers.WALK_DIST;
+        return s.getPiper(p.id).distanceTo(best.location) < Player.WALK_DIST;
     }
     @Override
     public Vector getMove(Player p, Scene s) {
         try {
             if (s.getFreeRats().size() == 0) {
-                p.setStrategy(new ReturnToGateStrategy(s));
+                p.setStrategy(new ReturnToGateStrategy(p, s));
             }
         } catch (NullPointerException e) {
         }
@@ -61,7 +61,7 @@ public class InterceptRatStrategy extends TargetStrategy {
             if (closestRat != null && s.getPiperClosestToRat(closestRat) == p.id) {
                 this.target = s.getRat(closestRat);
             } else {
-                p.setStrategy(new ReturnToGateStrategy(s));
+                p.setStrategy(new ReturnToGateStrategy(p, s));
             }
             return super.getMove(p,s);
         }

@@ -3,8 +3,6 @@ package piedpipers.oo;
 import piedpipers.oo.Vector;
 import piedpipers.oo.Scene;
 
-import piedpipers.sim.Piedpipers;
-
 public class InterceptorMath {
     public static class Intercept {
         public double time;

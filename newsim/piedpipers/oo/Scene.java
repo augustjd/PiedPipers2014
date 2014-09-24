@@ -25,9 +25,9 @@ public class Scene {
     public Vector getPiper(int index) { return pipers[index]; }
     public double getPiperSpeed(int index) { 
         if (music[index]) {
-            return Piedpipers.MUSICPIPER_SPEED;
+            return Player.MUSICPIPER_SPEED;
         } else {
-            return Piedpipers.PIPER_SPEED;
+            return Player.PIPER_SPEED;
         }
     }
     public boolean isPlayingMusic(int index) { return music[index]; }
@@ -95,7 +95,7 @@ public class Scene {
     }
 
     public Vector getGatePosition() {
-        return new Vector(dimension/2.0, dimension/2.0 + 0.25);
+        return new Vector(dimension/2.0, dimension/2.0 + 0.5);
     }
 
     public Vector getRatVelocity(int rat_index) {
@@ -103,7 +103,7 @@ public class Scene {
     }
 
     public boolean isRatUnderInfluenceOfPiper(Vector rat, int piper_index) {
-        return music[piper_index] && rat.distanceTo(getPiper(piper_index)) < (Piedpipers.WALK_DIST * 0.90);
+        return music[piper_index] && rat.distanceTo(getPiper(piper_index)) < (Player.WALK_DIST * 0.90);
     }
 
     public boolean isRatUnderInfluenceOfAnyPiper(Vector rat) {
@@ -138,8 +138,8 @@ public class Scene {
         this.rat_velocities = new Vector[rats.length];
         for (int i = 0; i < rats.length; i++) {
             this.rats[i] = new Vector(rats[i]);
-            this.rat_velocities[i] = new Vector(Piedpipers.WALK_SPEED * Math.sin(thetas[i] * Math.PI / 180),
-                                                Piedpipers.WALK_SPEED * Math.cos(thetas[i] * Math.PI / 180));
+            this.rat_velocities[i] = new Vector(Player.WALK_SPEED * Math.sin(thetas[i] * Math.PI / 180),
+                                                Player.WALK_SPEED * Math.cos(thetas[i] * Math.PI / 180));
         }
 
         this.music = new boolean[music.length];
@@ -185,8 +185,11 @@ public class Scene {
                 current.tick + 1);
     }
 
+    public Scene lookAhead(InterceptorMath.Intercept intercept) {
+        return lookAhead((int)Math.ceil(intercept.time));
+    }
     public Scene lookAhead(int ticks) {
-        Point[] next_rats = moveRats(this.rats, this.thetas, this.dimension, Piedpipers.WALK_SPEED * ticks);
+        Point[] next_rats = moveRats(this.rats, this.thetas, this.dimension, Player.WALK_SPEED * ticks);
         Point[] pipers = new Point[this.pipers.length];
         for (int i = 0; i < pipers.length; i++) {
             pipers[i] = this.pipers[i].asPoint();
@@ -233,7 +236,7 @@ public class Scene {
 		return npos;
 	}
 	static Point moveRat(Point thisRat, int theta, int dimension) {
-        return moveRat(thisRat, theta, dimension, Piedpipers.WALK_SPEED);
+        return moveRat(thisRat, theta, dimension, Player.WALK_SPEED);
 	}
 
 	// update the current point according to the offsets

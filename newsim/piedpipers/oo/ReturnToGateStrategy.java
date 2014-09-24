@@ -8,8 +8,9 @@ import piedpipers.sim.*;
 import java.awt.Color;
 
 public class ReturnToGateStrategy extends TargetStrategy {
-    public ReturnToGateStrategy(Scene s) {
-        super(s.getGatePosition().sub(20,20));
+    public ReturnToGateStrategy(Player p, Scene s) {
+        super(s.getGatePosition().sub(50,20));
+        p.music = true;
     }
 
     @Override

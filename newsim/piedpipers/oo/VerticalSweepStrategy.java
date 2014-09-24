@@ -16,7 +16,7 @@ public class VerticalSweepStrategy extends TargetStrategy {
         public boolean shouldBeActive(Player p, Scene s) {
             double portion = (s.dimension/2.0) / s.getNumberOfPipers();
 
-            return portion - (Piedpipers.WALK_DIST * 2) - fudge < 0;
+            return portion - (Player.WALK_DIST * 2) - fudge < 0;
         }
     }
     Stage stage;
@@ -34,7 +34,7 @@ public class VerticalSweepStrategy extends TargetStrategy {
 
     public Vector getMove(Player player, Scene s) {
         if (s.getFreeRats().size() == 0) {
-            player.setStrategy(new ReturnToGateStrategy(s));
+            player.setStrategy(new ReturnToGateStrategy(player, s));
         }
         this.stage = determineStage(player, s);
 
@@ -72,7 +72,7 @@ public class VerticalSweepStrategy extends TargetStrategy {
             return Stage.GETTING_TO_TOP;
         }
     }
-    public double buffer = Piedpipers.WALK_DIST;
+    public double buffer = Player.WALK_DIST;
 
     public Vector getTopTarget(int piper_id, Scene s) {
         double increment  = (s.dimension/2.0) / s.getNumberOfPipers();
